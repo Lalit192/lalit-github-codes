@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Appointment Test</title>
+</head>
+<body>
+    <h1>🏥 Appointment Booking Test</h1>
+    
+    <button onclick="testAppointment()">Test Appointment Booking</button>
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        async function testAppointment() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing appointment booking...';
+            
+            try {
+                // Get fresh patients
+                const patientsResponse = await fetch('http://localhost:4000/patients');
+                const patients = await patientsResponse.json();
+                
+                // Get fresh doctors
+                const doctorsResponse = await fetch('http://localhost:4003/doctors');
+                const doctors = await doctorsResponse.json();
+                
+                if (patients.length === 0 || doctors.length === 0) {
+                    resultDiv.innerHTML = '❌ No patients or doctors found!';
+                    return;
+                }
+                
+                // Use latest patient and doctor
+                const patient = patients[patients.length - 1];
+                const doctor = doctors[doctors.length - 1];
+                
+                resultDiv.innerHTML = `
+                    Using:<br>
+                    Patient: ${patient.name} (${patient.id})<br>
+                    Doctor: ${doctor.name} (${doctor.id})<br>
+                    <br>Booking appointment...
+                `;
+                
+                // Book appointment
+                const appointmentData = {
+                    patientId: patient.id,
+                    doctorId: doctor.id,
+                    appointmentDate: "2025-01-25",
+                    appointmentTime: "10:30",
+                    reason: "Regular Checkup",
+                    notes: "Test appointment"
+                };
+                
+                const appointmentResponse = await fetch('http://localhost:4003/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(appointmentData)
+                });
+                
+                if (appointmentResponse.ok) {
+                    const appointment = await appointmentResponse.json();
+                    resultDiv.innerHTML = `
+                        ✅ <strong>SUCCESS! Appointment Booked!</strong><br><br>
+                        <strong>Inter-Service Communication Working!</strong><br><br>
+                        <strong>Appointment Details:</strong><br>
+                        ID: ${appointment.id}<br>
+                        Patient: ${appointment.patientName}<br>
+                        Doctor: ${appointment.doctorName}<br>
+                        Date: ${appointment.appointmentDate}<br>
+                        Time: ${appointment.appointmentTime}<br>
+                        Reason: ${appointment.reason}<br>
+                        Status: ${appointment.status}
+                    `;
+                } else {
+                    const errorText = await appointmentResponse.text();
+                    resultDiv.innerHTML = `
+                        ❌ <strong>Appointment Failed (${appointmentResponse.status})</strong><br><br>
+                        Patient: ${patient.name} (${patient.id})<br>
+                        Doctor: ${doctor.name} (${doctor.id})<br>
+                        Error: ${errorText}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

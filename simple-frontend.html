@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Hospital Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .header { text-align: center; color: #333; margin-bottom: 30px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .result { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Hospital Management System</h1>
+            <p>Direct Backend Testing Interface</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <div class="section">
+            <h2>🔐 Authentication</h2>
+            <button onclick="testLogin()">Test Login</button>
+            <div id="authResult" class="result"></div>
+        </div>
+
+        <!-- Patient Management -->
+        <div class="section">
+            <h2>👥 Patient Management</h2>
+            <button onclick="getPatients()">Get All Patients</button>
+            <button onclick="createPatient()">Create Test Patient</button>
+            <div id="patientResult" class="result"></div>
+        </div>
+
+        <!-- Doctor Management -->
+        <div class="section">
+            <h2>👨⚕️ Doctor Management</h2>
+            <button onclick="getDoctors()">Get All Doctors</button>
+            <button onclick="createDoctor()">Create Test Doctor</button>
+            <div id="doctorResult" class="result"></div>
+        </div>
+
+        <!-- Appointment Management -->
+        <div class="section">
+            <h2>📅 Appointment Management</h2>
+            <button onclick="bookAppointment()">Book Test Appointment</button>
+            <div id="appointmentResult" class="result"></div>
+        </div>
+
+        <!-- Service Status -->
+        <div class="section">
+            <h2>🔧 Service Status</h2>
+            <button onclick="checkAllServices()">Check All Services</button>
+            <div id="statusResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+
+        async function apiCall(url, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                if (token) {
+                    options.headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(url, options);
+                const result = await response.text();
+                
+                return {
+                    status: response.status,
+                    data: result,
+                    success: response.ok
+                };
+            } catch (error) {
+                return {
+                    status: 0,
+                    data: error.message,
+                    success: false
+                };
+            }
+        }
+
+        async function testLogin() {
+            const result = await apiCall('http://localhost:4005/test/login', 'POST');
+            const resultDiv = document.getElementById('authResult');
+            
+            if (result.success) {
+                try {
+                    const tokenData = JSON.parse(result.data);
+                    token = tokenData.token;
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Login successful!\nToken: ${token.substring(0, 50)}...`;
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Login failed: ${result.data}`;
+                }
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Login failed (${result.status}): ${result.data}`;
+            }
+        }
+
+        async function getPatients() {
+            const result = await apiCall('http://localhost:4000/patients');
+            const resultDiv = document.getElementById('patientResult');
+            
+            if (result.success) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Patients loaded:\n${result.data}`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Failed to load patients (${result.status}): ${result.data}`;
+            }
+        }
+
+        async function createPatient() {
+            const patientData = {
+                name: "John Doe",
+                email: `test${Date.now()}@example.com`,
+                dateOfBirth: "1990-01-15",
+                address: "123 Test Street",
+                registeredDate: "2025-01-18"
+            };
+
+            const result = await apiCall('http://localhost:4000/patients', 'POST', patientData);
+            const resultDiv = document.getElementById('patientResult');
+            
+            if (result.success) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Patient created:\n${result.data}`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Failed to create patient (${result.status}): ${result.data}`;
+            }
+        }
+
+        async function getDoctors() {
+            const result = await apiCall('http://localhost:4003/doctors');
+            const resultDiv = document.getElementById('doctorResult');
+            
+            if (result.success) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Doctors loaded:\n${result.data}`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Failed to load doctors (${result.status}): ${result.data}`;
+            }
+        }
+
+        async function createDoctor() {
+            const doctorData = {
+                name: "Dr. Sarah Johnson",
+                email: `doctor${Date.now()}@hospital.com`,
+                specialization: "Cardiology",
+                phoneNumber: "+1-555-0101",
+                licenseNumber: `MD${Date.now()}`,
+                experienceYears: 12,
+                joinedDate: "2025-01-18",
+                department: "Cardiology",
+                address: "789 Medical Center"
+            };
+
+            const result = await apiCall('http://localhost:4003/doctors', 'POST', doctorData);
+            const resultDiv = document.getElementById('doctorResult');
+            
+            if (result.success) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Doctor created:\n${result.data}`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Failed to create doctor (${result.status}): ${result.data}`;
+            }
+        }
+
+        async function bookAppointment() {
+            const resultDiv = document.getElementById('appointmentResult');
+            
+            try {
+                // First get fresh patients and doctors
+                const patientsResult = await apiCall('http://localhost:4000/patients');
+                const doctorsResult = await apiCall('http://localhost:4003/doctors');
+                
+                if (!patientsResult.success || !doctorsResult.success) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Failed to get patients or doctors';
+                    return;
+                }
+
+                const patients = JSON.parse(patientsResult.data);
+                const doctors = JSON.parse(doctorsResult.data);
+                
+                if (patients.length === 0 || doctors.length === 0) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Create patients and doctors first!';
+                    return;
+                }
+
+                // Use the most recent patient and doctor
+                const latestPatient = patients[patients.length - 1];
+                const latestDoctor = doctors[doctors.length - 1];
+                
+                const appointmentData = {
+                    patientId: latestPatient.id,
+                    doctorId: latestDoctor.id,
+                    appointmentDate: "2025-01-25",
+                    appointmentTime: "10:30",
+                    reason: "Regular Checkup",
+                    notes: "Test appointment from frontend"
+                };
+                
+                console.log('Booking appointment with:', appointmentData);
+
+                const result = await apiCall('http://localhost:4003/appointments', 'POST', appointmentData);
+                const resultDiv = document.getElementById('appointmentResult');
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Appointment booked (Inter-service communication):\n${result.data}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Failed to book appointment (${result.status}):\nPatient ID: ${appointmentData.patientId}\nDoctor ID: ${appointmentData.doctorId}\nError: ${result.data}`;
+                }
+            } catch (e) {
+                document.getElementById('appointmentResult').className = 'result error';
+                document.getElementById('appointmentResult').textContent = `❌ Error: ${e.message}`;
+            }
+        }
+
+        async function checkAllServices() {
+            const services = [
+                { name: 'Auth Service', url: 'http://localhost:4005/actuator/health' },
+                { name: 'Patient Service', url: 'http://localhost:4000/actuator/health' },
+                { name: 'Doctor Service', url: 'http://localhost:4003/actuator/health' },
+                { name: 'Billing Service', url: 'http://localhost:4001/actuator/health' },
+                { name: 'Analytics Service', url: 'http://localhost:4002/actuator/health' }
+            ];
+
+            let statusText = 'Service Health Check:\n\n';
+            
+            for (const service of services) {
+                const result = await apiCall(service.url);
+                const status = result.success ? '🟢 UP' : '🔴 DOWN';
+                statusText += `${status} ${service.name}\n`;
+            }
+
+            document.getElementById('statusResult').className = 'result';
+            document.getElementById('statusResult').textContent = statusText;
+        }
+
+        // Auto-check services on load
+        window.onload = function() {
+            checkAllServices();
+        };
+    </script>
+</body>
+</html>

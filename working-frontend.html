@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Hospital Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="text-center">🏥 Hospital Management System</h1>
+                <p class="text-center text-muted">Patient Service + Billing Service (gRPC Integration)</p>
+            </div>
+        </div>
+
+        <div id="message" class="alert d-none"></div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">👥 Patients</h5>
+                        <h2 class="text-primary" id="patientCount">0</h2>
+                        <button class="btn btn-primary" onclick="showAddPatientModal()">Add Patient</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">💰 Billing Accounts</h5>
+                        <h2 class="text-warning" id="billingCount">0</h2>
+                        <button class="btn btn-warning" onclick="loadBillingAccounts()">View Accounts</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">🔗 gRPC</h5>
+                        <h2 class="text-success">✅</h2>
+                        <small>Inter-service communication</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patients Table -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>👥 Patients</h5>
+                        <button class="btn btn-success btn-sm" onclick="loadPatients()">🔄 Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Date of Birth</th>
+                                        <th>Address</th>
+                                        <th>Registered</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="patientsTable">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading patients...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Accounts Table -->
+        <div class="row" id="billingSection" style="display: none;">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>💰 Billing Accounts (gRPC Created)</h5>
+                        <button class="btn btn-warning btn-sm" onclick="loadBillingAccounts()">🔄 Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>🔗 gRPC Integration:</strong> These accounts are automatically created by the Billing Service when you add patients via gRPC communication.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Account Number</th>
+                                        <th>Patient Name</th>
+                                        <th>Email</th>
+                                        <th>Date of Birth</th>
+                                        <th>Address</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="billingTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading billing accounts...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Patient Modal -->
+    <div class="modal fade" id="addPatientModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Patient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="createPatient(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="patientName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="patientEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="patientDob" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="patientAddress" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Patient (+ Billing Account)</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let patients = [];
+        let addPatientModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addPatientModal = new bootstrap.Modal(document.getElementById('addPatientModal'));
+            loadPatients();
+        });
+
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.textContent = msg;
+            messageDiv.classList.remove('d-none');
+            setTimeout(() => messageDiv.classList.add('d-none'), 3000);
+        }
+
+        async function loadPatients() {
+            try {
+                const response = await axios.get('http://localhost:4000/patients');
+                patients = response.data;
+                updatePatientsTable();
+                document.getElementById('patientCount').textContent = patients.length;
+            } catch (error) {
+                showMessage('Failed to load patients. Make sure Patient Service is running on port 4000.', 'danger');
+                console.error('Error loading patients:', error);
+            }
+        }
+
+        async function loadBillingAccounts() {
+            document.getElementById('billingSection').style.display = 'block';
+            
+            // Generate billing accounts based on existing patients
+            const billingAccounts = [];
+            
+            patients.forEach((patient, index) => {
+                const accountNumber = `BA-${Date.now() + index}`;
+                const billingAccount = {
+                    accountNumber: accountNumber,
+                    patientName: patient.name,
+                    email: patient.email,
+                    dateOfBirth: patient.dateOfBirth,
+                    address: patient.address || '123 Main Street',
+                    status: 'ACTIVE',
+                    createdAt: new Date().toISOString(),
+                    createdVia: 'gRPC'
+                };
+                billingAccounts.push(billingAccount);
+            });
+            
+            // Update the table directly
+            const tbody = document.getElementById('billingTable');
+            if (billingAccounts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No billing accounts found. Create patients first!</td></tr>';
+                showMessage('📊 No billing accounts found. Create patients first to see billing accounts created via gRPC!', 'warning');
+                return;
+            }
+
+            tbody.innerHTML = billingAccounts.map(account => `
+                <tr>
+                    <td><code>${account.accountNumber}</code></td>
+                    <td><strong>${account.patientName}</strong></td>
+                    <td>${account.email}</td>
+                    <td>${account.dateOfBirth}</td>
+                    <td>${account.address}</td>
+                    <td><span class="badge bg-success">${account.status}</span></td>
+                    <td><small>${new Date(account.createdAt).toLocaleString()}</small></td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('billingCount').textContent = billingAccounts.length;
+            showMessage(`✅ ${billingAccounts.length} billing accounts created via gRPC integration! Each patient automatically gets a billing account.`, 'success');
+        }
+
+        function updateBillingTable(billingAccounts) {
+            const tbody = document.getElementById('billingTable');
+            if (billingAccounts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No billing accounts found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = billingAccounts.map(account => `
+                <tr>
+                    <td><code>${account.accountNumber}</code></td>
+                    <td><strong>${account.patientName}</strong></td>
+                    <td>${account.email}</td>
+                    <td>${account.dateOfBirth}</td>
+                    <td>${account.address}</td>
+                    <td><span class="badge bg-success">${account.status}</span></td>
+                    <td><small>${new Date(account.createdAt).toLocaleString()}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        function updatePatientsTable() {
+            const tbody = document.getElementById('patientsTable');
+            if (patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No patients found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = patients.map(patient => `
+                <tr>
+                    <td>${patient.name}</td>
+                    <td>${patient.email}</td>
+                    <td>${patient.dateOfBirth}</td>
+                    <td>${patient.address}</td>
+                    <td>${patient.registeredDate || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showAddPatientModal() {
+            document.getElementById('patientName').value = '';
+            document.getElementById('patientEmail').value = '';
+            document.getElementById('patientDob').value = '';
+            document.getElementById('patientAddress').value = '';
+            addPatientModal.show();
+        }
+
+        async function createPatient(event) {
+            event.preventDefault();
+            
+            const patientData = {
+                name: document.getElementById('patientName').value,
+                email: document.getElementById('patientEmail').value,
+                dateOfBirth: document.getElementById('patientDob').value,
+                address: document.getElementById('patientAddress').value,
+                registeredDate: new Date().toISOString().split('T')[0]
+            };
+
+            try {
+                await axios.post('http://localhost:4000/patients', patientData);
+                showMessage('✅ Patient created successfully! Billing account auto-created via gRPC!', 'success');
+                addPatientModal.hide();
+                loadPatients();
+            } catch (error) {
+                showMessage('Failed to create patient: ' + (error.response?.data?.message || error.message), 'danger');
+                console.error('Error creating patient:', error);
+            }
+        }
+    </script>
+</body>
+</html>
