@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ###### Copyright © 2025 Code Jackal | Original Course Material by Chris Blakely
 
 ---
@@ -405,3 +406,6 @@ WHERE NOT EXISTS (
 ```
 POSTGRES_DB=db;POSTGRES_PASSWORD=password;POSTGRES_USER=admin_user
 ```
+=======
+fddfvvdbdfvfbd
+>>>>>>> 6e6f856744c92e1fc33d5cbbf35d7234ceadcb50
